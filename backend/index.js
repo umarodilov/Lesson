@@ -1,4 +1,3 @@
-// index.js
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -14,29 +13,30 @@ const admin = require("./src/routes/admin");
 
 const app = express();
 
-/**
- * ✅ CORS (Local + Render)
- * - Local: http://localhost:5173
- * - Production: process.env.CLIENT_URL (e.g. https://your-frontend.onrender.com)
- */
+/** ✅ CORS: allow Local + Render Front */
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.CLIENT_URL,
+  process.env.CLIENT_URL, // https://zabon-omuz.onrender.com
 ].filter(Boolean);
 
-app.use(
-  cors({
-    origin: function (origin, cb) {
-      // allow requests with no origin (e.g. Render health checks, Postman)
-      if (!origin) return cb(null, true);
+const corsOptions = {
+  origin: function (origin, cb) {
+    // allow no-origin (Render healthchecks, Postman, server-to-server)
+    if (!origin) return cb(null, true);
 
-      if (allowedOrigins.includes(origin)) return cb(null, true);
+    // ✅ allow exact match
+    if (allowedOrigins.includes(origin)) return cb(null, true);
 
-      return cb(new Error("Not allowed by CORS: " + origin));
-    },
-    credentials: true,
-  })
-);
+    return cb(new Error("Not allowed by CORS: " + origin));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+// ✅ IMPORTANT: handle preflight
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 
@@ -51,13 +51,9 @@ app.use("/api/admin", admin);
 
 const PORT = process.env.PORT || 5000;
 
-// ✅ connect DB then start server
 connectDB(process.env.MONGO_URI)
   .then(() => {
-    app.listen(PORT, () => {
-      console.log(`🚀 API running on port ${PORT}`);
-      if (process.env.CLIENT_URL) console.log(`🌐 CLIENT_URL: ${process.env.CLIENT_URL}`);
-    });
+    app.listen(PORT, () => console.log(`🚀 API running on port ${PORT}`));
   })
   .catch((err) => {
     console.error("❌ DB connection failed:", err);
