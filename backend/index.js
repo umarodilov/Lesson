@@ -1,3 +1,4 @@
+// index.js
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -13,18 +14,17 @@ const admin = require("./src/routes/admin");
 
 const app = express();
 
-/** ✅ CORS: allow Local + Render Front */
+/** ✅ CORS: Local + Render Front */
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.CLIENT_URL, // https://zabon-omuz.onrender.com
+  process.env.CLIENT_URL, // example: https://zabon-omuz.onrender.com
 ].filter(Boolean);
 
 const corsOptions = {
   origin: function (origin, cb) {
-    // allow no-origin (Render healthchecks, Postman, server-to-server)
+    // allow requests with no origin (health checks, Postman)
     if (!origin) return cb(null, true);
 
-    // ✅ allow exact match
     if (allowedOrigins.includes(origin)) return cb(null, true);
 
     return cb(new Error("Not allowed by CORS: " + origin));
@@ -35,8 +35,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// ✅ IMPORTANT: handle preflight
-app.options("*", cors(corsOptions));
+// ✅ IMPORTANT: Express + Node22: use regex instead of "*"
+app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 
