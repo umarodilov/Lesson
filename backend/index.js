@@ -1,3 +1,4 @@
+// index.js
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -9,11 +10,34 @@ const seed = require("./src/routes/seed");
 const lessons = require("./src/routes/lessons");
 const flashcards = require("./src/routes/flashcards");
 const progress = require("./src/routes/progress");
-
 const admin = require("./src/routes/admin");
 
 const app = express();
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+
+/**
+ * ✅ CORS (Local + Render)
+ * - Local: http://localhost:5173
+ * - Production: process.env.CLIENT_URL (e.g. https://your-frontend.onrender.com)
+ */
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: function (origin, cb) {
+      // allow requests with no origin (e.g. Render health checks, Postman)
+      if (!origin) return cb(null, true);
+
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+
+      return cb(new Error("Not allowed by CORS: " + origin));
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.get("/api/health", (req, res) => res.json({ status: "OK 🚀" }));
@@ -27,6 +51,15 @@ app.use("/api/admin", admin);
 
 const PORT = process.env.PORT || 5000;
 
-connectDB(process.env.MONGO_URI).then(() => {
-  app.listen(PORT, () => console.log(`🚀 API http://localhost:${PORT}`));
-});
+// ✅ connect DB then start server
+connectDB(process.env.MONGO_URI)
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 API running on port ${PORT}`);
+      if (process.env.CLIENT_URL) console.log(`🌐 CLIENT_URL: ${process.env.CLIENT_URL}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ DB connection failed:", err);
+    process.exit(1);
+  });
