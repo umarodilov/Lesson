@@ -1,0 +1,115 @@
+:root{
+  --blue:#2563eb;
+  --sky:#0ea5e9;
+  --ink:#0f172a;
+  --muted:#64748b;
+  --border:#e2e8f0;
+  --card: rgba(255,255,255,.85);
+  --shadow: 0 12px 34px rgba(2,6,23,.10);
+  --shadow2: 0 24px 70px rgba(2,6,23,.14);
+  --r: 22px;
+}
+
+body{
+  background:
+    radial-gradient(1200px 600px at 20% 0%, rgba(37,99,235,.18), transparent 55%),
+    radial-gradient(900px 500px at 80% 10%, rgba(14,165,233,.14), transparent 55%),
+    linear-gradient(180deg, #f8fafc, #eef2ff);
+  color: var(--ink);
+}
+
+.app-topbar{
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  background: rgba(255,255,255,.72);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand{
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  user-select:none;
+}
+.brand span{ color: var(--blue); }
+
+.glass{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+}
+
+.heroRight{
+  background: linear-gradient(135deg, var(--blue), var(--sky));
+  color: #fff;
+  position: relative;
+  overflow:hidden;
+  border-radius: var(--r);
+  min-height: 340px;
+}
+.heroRight::before{
+  content:"";
+  position:absolute; inset:0;
+  opacity:.22;
+  background:
+    radial-gradient(circle at 20% 10%, #fff, transparent 40%),
+    radial-gradient(circle at 80% 40%, #fff, transparent 45%);
+}
+.heroRight > *{ position: relative; z-index: 1; }
+
+.badge-soft{
+  border: 1px solid var(--border);
+  background: #fff;
+  color:#334155;
+  font-weight: 800;
+}
+
+.btn-primary{
+  background: var(--blue);
+  border-color: var(--blue);
+  font-weight: 800;
+}
+.btn-primary:hover{
+  background:#1d4ed8;
+  border-color:#1d4ed8;
+}
+.btn-soft{
+  background: rgba(37,99,235,.10);
+  border: 1px solid rgba(37,99,235,.16);
+  color:#1d4ed8;
+  font-weight: 900;
+}
+.btn-soft:hover{ background: rgba(37,99,235,.14); }
+
+.kpi{
+  background:#fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 12px 14px;
+}
+.kpi .n{ font-weight: 900; font-size: 1.65rem; color: var(--blue); line-height:1; }
+.kpi .t{ font-size: .78rem; color: var(--muted); margin-top: 6px; }
+
+.card-mini{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.flashCard{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius: 28px;
+  box-shadow: var(--shadow2);
+  padding: 52px 22px;
+  text-align:center;
+  cursor:pointer;
+  user-select:none;
+  transition: transform .10s ease;
+}
+.flashCard:active{ transform: scale(.99); }
+
+.small-muted{ color: var(--muted); }
