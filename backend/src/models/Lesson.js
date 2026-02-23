@@ -1,4 +1,4 @@
-// src/models/Lesson.js
+// backend/src/models/Lesson.js
 const mongoose = require("mongoose");
 
 const LEVELS = ["A1", "A2", "B1", "B2"];
@@ -29,20 +29,14 @@ const QuizSchema = new mongoose.Schema(
       type: [String],
       validate: {
         validator: function (arr) {
-          return Array.isArray(arr) && arr.length === 3 && arr.every(s => typeof s === "string");
+          return Array.isArray(arr) && arr.length === 3 && arr.every((s) => typeof s === "string");
         },
         message: "Quiz.options must be an array of exactly 3 strings",
       },
       default: ["", "", ""],
       required: true,
     },
-    correct: {
-      type: Number,
-      min: 0,
-      max: 2,
-      required: true,
-      default: 0,
-    },
+    correct: { type: Number, min: 0, max: 2, required: true, default: 0 },
   },
   { _id: false }
 );
@@ -50,12 +44,15 @@ const QuizSchema = new mongoose.Schema(
 // ---------- main schema ----------
 const LessonSchema = new mongoose.Schema(
   {
-    // ✅ for upsert/no-duplicates in seed
     seedKey: { type: String, unique: true, index: true, sparse: true },
 
     title: { type: String, required: true, trim: true },
 
     level: { type: String, required: true, enum: LEVELS, index: true },
+
+    // ✅ order = 1..60 (A1 1..15, A2 16..30, B1 31..45, B2 46..60)
+    order: { type: Number, default: 0, index: true },
+
     topic: { type: String, required: true, trim: true, index: true },
 
     coverImage: { type: String, default: "", trim: true },
@@ -65,7 +62,6 @@ const LessonSchema = new mongoose.Schema(
       default: [],
       validate: {
         validator: function (arr) {
-          // seed-и ту 12 vocab медиҳад, аммо мо танҳо месанҷем ки массив бошад
           return Array.isArray(arr);
         },
         message: "vocab must be an array",
@@ -74,27 +70,27 @@ const LessonSchema = new mongoose.Schema(
 
     listening: { type: ListeningSchema, default: () => ({ textRu: "", audioUrl: "" }) },
 
-    // ✅ seed-и ту quiz = Array(8) of {q, options[3], correct}
+    // ✅ иҷозат медиҳем холӣ ҳам бошад (барои flexibility)
     quiz: {
       type: [QuizSchema],
       default: [],
       validate: {
         validator: function (arr) {
-          return Array.isArray(arr) && arr.length > 0;
+          return Array.isArray(arr);
         },
-        message: "quiz must be a non-empty array",
+        message: "quiz must be an array",
       },
     },
 
     isPublished: { type: Boolean, default: false, index: true },
 
-    // ADMIN_ID from env (string), can be null
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
   },
   { timestamps: true }
 );
 
-// Helpful compound index (optional)
+LessonSchema.index({ level: 1, order: 1 });
 LessonSchema.index({ level: 1, topic: 1 });
 
-module.exports = mongoose.model("Lesson", LessonSchema);
+// ✅ IMPORTANT: export MODEL (not schema)
+module.exports = mongoose.models.Lesson || mongoose.model("Lesson", LessonSchema);

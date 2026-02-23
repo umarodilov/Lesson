@@ -13,10 +13,10 @@ export default function Lesson() {
   const [loading, setLoading] = useState(false);
 
   // quiz flow
-  const [step, setStep] = useState(0); // which question index
-  const [picked, setPicked] = useState(null); // picked option index for current question
-  const [answers, setAnswers] = useState([]); // [{qIndex, picked, correct}]
-  const [locked, setLocked] = useState(false); // lock current question after pick
+  const [step, setStep] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [answers, setAnswers] = useState([]);
+  const [locked, setLocked] = useState(false);
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
@@ -26,7 +26,6 @@ export default function Lesson() {
 
     apiLesson(id)
       .then((data) => {
-        // normalize: quiz must be array
         const quizArr = Array.isArray(data.quiz) ? data.quiz : [];
         setLesson({ ...data, quiz: quizArr });
         setStep(0);
@@ -41,6 +40,16 @@ export default function Lesson() {
   const vocabCount = useMemo(() => lesson?.vocab?.length || 0, [lesson]);
   const quizCount = useMemo(() => lesson?.quiz?.length || 0, [lesson]);
 
+  const lessonOrder = useMemo(() => {
+    const n = Number(lesson?.order);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [lesson]);
+
+  const lessonLabel = useMemo(() => {
+    const lvl = lesson?.level || "A1";
+    return lessonOrder ? `${lvl} • Дарс ${lessonOrder}` : `${lvl} • Дарс`;
+  }, [lesson?.level, lessonOrder]);
+
   const current = useMemo(() => {
     if (!lesson?.quiz?.length) return null;
     return lesson.quiz[step] || null;
@@ -48,14 +57,15 @@ export default function Lesson() {
 
   const score = useMemo(() => {
     if (!answers.length) return 0;
-    const correct = answers.filter(a => a.correct).length;
-    return Math.round((correct / quizCount) * 100);
+    const correct = answers.filter((a) => a.correct).length;
+    return Math.round((correct / Math.max(quizCount, 1)) * 100);
   }, [answers, quizCount]);
 
-  const correctCount = useMemo(() => answers.filter(a => a.correct).length, [answers]);
+  const correctCount = useMemo(() => answers.filter((a) => a.correct).length, [answers]);
 
   async function generateCards() {
-    setMsg(""); setErr("");
+    setMsg("");
+    setErr("");
     try {
       setLoading(true);
       const r = await apiGenerateCards(id);
@@ -67,7 +77,6 @@ export default function Lesson() {
     }
   }
 
-  // ✅ Auto pick + auto next
   async function pickOption(optIdx) {
     if (!current || locked || finished) return;
 
@@ -76,13 +85,8 @@ export default function Lesson() {
 
     const isCorrect = optIdx === (current.correct ?? 0);
 
-    // save local answer
-    setAnswers(prev => [
-      ...prev,
-      { qIndex: step, picked: optIdx, correct: isCorrect },
-    ]);
+    setAnswers((prev) => [...prev, { qIndex: step, picked: optIdx, correct: isCorrect }]);
 
-    // show result 700ms then go next / finish
     setTimeout(async () => {
       const nextStep = step + 1;
 
@@ -91,13 +95,11 @@ export default function Lesson() {
         setPicked(null);
         setLocked(false);
       } else {
-        // finished all questions
         setFinished(true);
         setLocked(false);
 
-        // final score
-        const finalCorrect = (answers.filter(a => a.correct).length) + (isCorrect ? 1 : 0);
-        const finalScore = Math.round((finalCorrect / quizCount) * 100);
+        const finalCorrect = answers.filter((a) => a.correct).length + (isCorrect ? 1 : 0);
+        const finalScore = Math.round((finalCorrect / Math.max(quizCount, 1)) * 100);
         const completed = finalScore >= 80;
 
         try {
@@ -166,9 +168,9 @@ export default function Lesson() {
           <div className="col-lg-8">
             <div className="glass p-4">
               <div className="d-flex align-items-start justify-content-between gap-2 flex-wrap">
-                <div>
-                  <div className="small text-secondary">Дарс</div>
-                  <div className="h4 m-0" style={{ fontWeight: 900 }}>
+                <div style={{ minWidth: 220 }}>
+                  <div className="small text-secondary">{lessonLabel}</div>
+                  <div className="h4 m-0" style={{ fontWeight: 900, wordBreak: "break-word" }}>
                     {lesson.title}
                   </div>
                   <div className="small text-secondary mt-1">
@@ -191,12 +193,22 @@ export default function Lesson() {
                   {(lesson.vocab || []).map((v, i) => (
                     <div className="card-mini" key={i}>
                       <div className="d-flex justify-content-between gap-3 flex-wrap">
-                        <div className="fw-bold" style={{ color: "#1d4ed8" }}>{v.ru}</div>
-                        <div className="fw-bold text-secondary">{v.tj}</div>
+                        <div className="fw-bold" style={{ color: "#1d4ed8", wordBreak: "break-word" }}>
+                          {v.ru}
+                        </div>
+                        <div className="fw-bold text-secondary" style={{ wordBreak: "break-word" }}>
+                          {v.tj}
+                        </div>
                       </div>
+
                       {(v.exampleRu || v.exampleTj) && (
-                        <div className="small text-secondary mt-2">
-                          {v.exampleRu ? <>RU: {v.exampleRu}<br /></> : null}
+                        <div className="small text-secondary mt-2" style={{ wordBreak: "break-word" }}>
+                          {v.exampleRu ? (
+                            <>
+                              RU: {v.exampleRu}
+                              <br />
+                            </>
+                          ) : null}
                           {v.exampleTj ? <>TJ: {v.exampleTj}</> : null}
                         </div>
                       )}
@@ -211,7 +223,9 @@ export default function Lesson() {
                   <div className="fw-bold">Listening</div>
                   <div className="card-mini mt-2">
                     <div className="small text-secondary">Матни RU:</div>
-                    <div className="fw-bold mt-1">{lesson.listening.textRu}</div>
+                    <div className="fw-bold mt-1" style={{ wordBreak: "break-word" }}>
+                      {lesson.listening.textRu}
+                    </div>
                     {lesson.listening.audioUrl ? (
                       <audio className="w-100 mt-2" controls src={lesson.listening.audioUrl} />
                     ) : (
@@ -221,9 +235,11 @@ export default function Lesson() {
                 </div>
               )}
 
-              {/* Quiz (multi) */}
+              {/* Quiz */}
               <div className="mt-4">
-                <div className="fw-bold">Тест (Auto) • {Math.min(step + 1, quizCount)}/{quizCount}</div>
+                <div className="fw-bold">
+                  Тест (Auto) • {Math.min(step + 1, quizCount)}/{quizCount}
+                </div>
 
                 {quizCount === 0 ? (
                   <div className="card-mini mt-2 text-secondary">
@@ -233,7 +249,9 @@ export default function Lesson() {
                   <div className="card-mini mt-2">
                     {!finished ? (
                       <>
-                        <div className="fw-bold">{current?.q}</div>
+                        <div className="fw-bold" style={{ wordBreak: "break-word" }}>
+                          {current?.q}
+                        </div>
 
                         <div className="row g-2 mt-2">
                           {(current?.options || []).map((t, idx) => {
@@ -250,7 +268,7 @@ export default function Lesson() {
                               <div className="col-md-4" key={idx}>
                                 <button
                                   className={`w-100 btn rounded-4 ${btn}`}
-                                  style={{ fontWeight: 900 }}
+                                  style={{ fontWeight: 900, whiteSpace: "normal" }}
                                   disabled={loading || locked}
                                   onClick={() => pickOption(idx)}
                                 >
@@ -280,9 +298,7 @@ export default function Lesson() {
                       <>
                         <div className="fw-bold">Натиҷа</div>
                         <div className="mt-2">
-                          <span className="badge rounded-pill px-3 py-2 bg-primary">
-                            Score: {score}%
-                          </span>
+                          <span className="badge rounded-pill px-3 py-2 bg-primary">Score: {score}%</span>
                           <span className="badge rounded-pill px-3 py-2 bg-secondary ms-2">
                             Correct: {correctCount}/{quizCount}
                           </span>
@@ -297,9 +313,7 @@ export default function Lesson() {
                           </button>
                         </div>
 
-                        <div className="small text-secondary mt-2">
-                          Барои кушодани дарси нав: score ≥ 80%.
-                        </div>
+                        <div className="small text-secondary mt-2">Барои кушодани дарси нав: score ≥ 80%.</div>
                       </>
                     )}
                   </div>
@@ -311,7 +325,9 @@ export default function Lesson() {
           {/* Right */}
           <div className="col-lg-4">
             <div className="glass p-4 h-100">
-              <div className="h6 m-0" style={{ fontWeight: 900 }}>Пешрафт</div>
+              <div className="h6 m-0" style={{ fontWeight: 900 }}>
+                Пешрафт
+              </div>
 
               <div className="mt-2">
                 <div className="small text-secondary">Ҳолат:</div>
@@ -334,10 +350,7 @@ export default function Lesson() {
                 <button className="btn btn-primary rounded-4" onClick={generateCards} disabled={loading}>
                   {loading ? "..." : "Generate Cards"}
                 </button>
-                <button
-                  className="btn btn-soft rounded-4"
-                  onClick={() => nav(`/app/flashcards?lessonId=${lesson._id}`)}
-                >
+                <button className="btn btn-soft rounded-4" onClick={() => nav(`/app/flashcards?lessonId=${lesson._id}`)}>
                   Ба флешкортҳо
                 </button>
               </div>
